@@ -12,6 +12,7 @@ def build():
         "--name=Android_Toolbox",
         "--icon=assets/icon.ico",
         "--add-data=assets;assets",
+        "--add-data=bin/platform-tools;bin/platform-tools",
         "--collect-all=customtkinter",
         "main.py"
     ]

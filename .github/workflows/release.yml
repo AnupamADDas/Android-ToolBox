@@ -30,6 +30,14 @@ jobs:
         run: |
           python utils/generate_icon.py
 
+      - name: Ensure Platform Tools
+        run: |
+          if (!(Test-Path "bin\platform-tools\adb.exe")) {
+            python -c "from core.adb_locator import locator; locator.download_platform_tools()"
+            New-Item -ItemType Directory -Force -Path "bin\platform-tools"
+            Copy-Item "$env:LOCALAPPDATA\AndroidToolbox\platform-tools\*" -Destination "bin\platform-tools\" -Recurse -Force
+          }
+
       - name: Build Executable
         run: |
           python build_exe.py

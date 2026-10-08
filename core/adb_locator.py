@@ -1,10 +1,14 @@
 import os
+import sys
 import shutil
 import subprocess
 import json
-from typing import Optional, Tuple
+import urllib.request
+import zipfile
+from typing import Optional, Tuple, Callable
 
 SETTINGS_FILE = os.path.join(os.path.expanduser("~"), ".adb_toolbox_settings.json")
+GOOGLE_PLATFORM_TOOLS_URL = "https://dl.google.com/android/repository/platform-tools-latest-windows.zip"
 
 class BinaryLocator:
     def __init__(self):
@@ -38,7 +42,52 @@ class BinaryLocator:
             pass
 
     def auto_detect(self):
-        # 1. Search in PATH
+        """Locates adb and fastboot binaries, prioritizing bundled tools."""
+        local_app_data = os.environ.get("LOCALAPPDATA", "")
+        android_home = os.environ.get("ANDROID_HOME", "")
+        android_sdk_root = os.environ.get("ANDROID_SDK_ROOT", "")
+
+        # Potential search locations in order of priority:
+        search_dirs = []
+
+        # 1. PyInstaller bundled temporary directory (when running packaged .exe)
+        if hasattr(sys, "_MEIPASS"):
+            search_dirs.append(os.path.join(sys._MEIPASS, "bin", "platform-tools"))
+
+        # 2. Local app bin directory (when running directly from source/repo)
+        app_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        search_dirs.append(os.path.join(app_root, "bin", "platform-tools"))
+
+        # 3. LocalAppData auto-downloaded cache
+        if local_app_data:
+            search_dirs.append(os.path.join(local_app_data, "AndroidToolbox", "platform-tools"))
+
+        # 4. Standard Android SDK platform-tools locations
+        if local_app_data:
+            search_dirs.append(os.path.join(local_app_data, "Android", "Sdk", "platform-tools"))
+        if android_home:
+            search_dirs.append(os.path.join(android_home, "platform-tools"))
+        if android_sdk_root:
+            search_dirs.append(os.path.join(android_sdk_root, "platform-tools"))
+        search_dirs.append(os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"), "Android", "platform-tools"))
+
+        # Search prioritized folders
+        for s_dir in search_dirs:
+            if not s_dir or not os.path.isdir(s_dir):
+                continue
+
+            cand_adb = os.path.join(s_dir, "adb.exe" if os.name == "nt" else "adb")
+            if not self.adb_path and os.path.isfile(cand_adb):
+                self.adb_path = cand_adb
+
+            cand_fastboot = os.path.join(s_dir, "fastboot.exe" if os.name == "nt" else "fastboot")
+            if not self.fastboot_path and os.path.isfile(cand_fastboot):
+                self.fastboot_path = cand_fastboot
+
+            if self.adb_path and self.fastboot_path:
+                return
+
+        # 5. Fallback: Search in system PATH
         if not self.adb_path:
             which_adb = shutil.which("adb")
             if which_adb and os.path.isfile(which_adb):
@@ -49,33 +98,49 @@ class BinaryLocator:
             if which_fastboot and os.path.isfile(which_fastboot):
                 self.fastboot_path = which_fastboot
 
-        # 2. Search common Android SDK locations
+    def download_platform_tools(self, on_progress: Optional[Callable[[float, str], None]] = None) -> Tuple[bool, str]:
+        """Downloads official Google platform-tools if not found anywhere."""
         local_app_data = os.environ.get("LOCALAPPDATA", "")
-        android_home = os.environ.get("ANDROID_HOME", "")
-        android_sdk_root = os.environ.get("ANDROID_SDK_ROOT", "")
-        
-        search_dirs = [
-            os.path.join(local_app_data, "Android", "Sdk", "platform-tools"),
-            os.path.join(android_home, "platform-tools") if android_home else "",
-            os.path.join(android_sdk_root, "platform-tools") if android_sdk_root else "",
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bin", "platform-tools"),
-            os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"), "Android", "platform-tools")
-        ]
+        if not local_app_data:
+            local_app_data = os.path.expanduser("~")
 
-        for s_dir in search_dirs:
-            if not s_dir or not os.path.isdir(s_dir):
-                continue
-            
-            cand_adb = os.path.join(s_dir, "adb.exe" if os.name == "nt" else "adb")
-            if not self.adb_path and os.path.isfile(cand_adb):
-                self.adb_path = cand_adb
+        dest_dir = os.path.join(local_app_data, "AndroidToolbox")
+        os.makedirs(dest_dir, exist_ok=True)
+        zip_path = os.path.join(dest_dir, "platform-tools.zip")
 
-            cand_fastboot = os.path.join(s_dir, "fastboot.exe" if os.name == "nt" else "fastboot")
-            if not self.fastboot_path and os.path.isfile(cand_fastboot):
-                self.fastboot_path = cand_fastboot
+        try:
+            if on_progress:
+                on_progress(0.1, "Downloading official Google platform-tools...")
 
-            if self.adb_path and self.fastboot_path:
-                break
+            def _reporthook(block_num, block_size, total_size):
+                if total_size > 0 and on_progress:
+                    pct = min(0.8, (block_num * block_size) / total_size * 0.8)
+                    on_progress(pct, f"Downloading: {int(pct * 100)}%")
+
+            urllib.request.urlretrieve(GOOGLE_PLATFORM_TOOLS_URL, zip_path, reporthook=_reporthook)
+
+            if on_progress:
+                on_progress(0.85, "Extracting binaries...")
+
+            with zipfile.ZipFile(zip_path, "r") as zip_ref:
+                zip_ref.extractall(dest_dir)
+
+            try:
+                os.remove(zip_path)
+            except Exception:
+                pass
+
+            # Auto detect newly extracted tools
+            self.auto_detect()
+            if self.is_adb_ready():
+                if on_progress:
+                    on_progress(1.0, "Platform tools ready!")
+                return True, "Platform tools downloaded successfully."
+            else:
+                return False, "Extraction completed but binaries were not found."
+
+        except Exception as e:
+            return False, f"Failed to download platform-tools: {str(e)}"
 
     def get_adb(self) -> Optional[str]:
         return self.adb_path
