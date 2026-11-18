@@ -42,10 +42,19 @@ jobs:
         run: |
           python build_exe.py
 
+      - name: Install Inno Setup
+        run: choco upgrade innosetup --no-progress -y
+
+      - name: Build Windows Installer
+        run: python build_installer.py
+
       - name: Create GitHub Release & Upload Asset
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/Android_Toolbox.exe
+          files: |
+            dist/Android_Toolbox.exe
+            dist/installer/Android-Toolbox-Setup-*-x64.exe
+            dist/installer/*.sha256
           name: Android Toolbox ${{ github.ref_name }}
           draft: false
           prerelease: false

@@ -67,6 +67,15 @@ A modern, lightweight, native Windows desktop application for managing and inter
 
 ## 🚀 How to Run
 
+### Midnight Interface
+
+The desktop UI uses rounded navy panels, colourful Lucide icons, cyan actions,
+keyboard focus rings, and soft ambient lighting. All seven tool views
+share the same theme. The window supports 1024×720 and above, with scrolling
+for longer panels.
+
+See [UI_DESIGN.md](UI_DESIGN.md) for the design system and native UI review command.
+
 ### Development Mode
 
 ```powershell
@@ -79,4 +88,30 @@ python main.py
 python build_exe.py
 ```
 
-The compiled, standalone executable will be in the `dist\ADB_Android_Toolbox.exe` directory.
+The portable executable will be at `dist\Android_Toolbox.exe`.
+
+### Build the Windows Installer
+
+Use 64-bit Python on Windows with PyInstaller and [Inno Setup](https://jrsoftware.org/isdl.php)
+6.6 or newer installed:
+
+```powershell
+python -m pip install -r requirements.txt pyinstaller
+python build_installer.py
+```
+
+If Inno Setup is installed in a custom location:
+
+```powershell
+python build_installer.py --iscc "C:\Tools\Inno Setup 7\ISCC.exe"
+```
+
+Output: `dist\installer\Android-Toolbox-Setup-1.2.0-x64.exe`, plus its SHA-256 checksum.
+
+Setup installs for the current user, adds a Start menu entry, offers an optional
+desktop shortcut, and registers an uninstaller in Windows Settings. Python,
+the UI assets, and the bundled ADB/Fastboot tools are included. Scrcpy remains
+an optional external tool for screen mirroring.
+
+The application, installer, shortcuts, and uninstall entry use the same
+multi-resolution icon. Recreate its assets with `python utils/generate_icon.py`.

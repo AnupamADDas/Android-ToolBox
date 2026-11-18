@@ -1,5 +1,5 @@
 import threading
-import customtkinter as ctk
+from ui.components import widgets as ctk
 from tkinter import filedialog
 from typing import Optional, List
 from core.device_manager import device_manager
@@ -15,6 +15,7 @@ class ShellView(ctk.CTkFrame):
         self.device = None
         self.history: List[str] = []
         self.history_index: int = -1
+        self._device_identity = None
         self._build_ui()
 
     def _build_ui(self):
@@ -24,19 +25,21 @@ class ShellView(ctk.CTkFrame):
         # 1. Preset Toolbar
         self.preset_card = ctk.CTkFrame(self, corner_radius=8, fg_color=THEME_CARD_DARK)
         self.preset_card.grid(row=0, column=0, sticky="ew", padx=15, pady=(15, 6))
+        self.preset_card.grid_columnconfigure(0, weight=1)
 
         ctk.CTkLabel(self.preset_card, text="Quick Commands:", font=ctk.CTkFont(size=12, weight="bold")).grid(
             row=0, column=0, padx=(15, 8), pady=8, sticky="w"
         )
 
         preset_row = ctk.CTkFrame(self.preset_card, fg_color="transparent")
-        preset_row.grid(row=0, column=1, padx=4, pady=8, sticky="w")
+        preset_row.grid(row=1, column=0, padx=12, pady=(0, 12), sticky="ew")
+        preset_row.grid_columnconfigure((0, 1, 2), weight=1, uniform="presets")
 
         for idx, (label, cmd) in enumerate(SHELL_PRESETS):
             ctk.CTkButton(
                 preset_row, text=label, height=26, font=ctk.CTkFont(size=11),
                 fg_color="#374151", command=lambda c=cmd: self._run_command(c)
-            ).grid(row=0, column=idx, padx=3)
+            ).grid(row=idx // 3, column=idx % 3, padx=3, pady=3, sticky="ew")
 
         # 2. Command Prompt Input
         self.cmd_card = ctk.CTkFrame(self, corner_radius=8, fg_color=THEME_CARD_DARK)
@@ -55,6 +58,7 @@ class ShellView(ctk.CTkFrame):
 
         self.btn_run = ctk.CTkButton(input_row, text="Execute", width=90, command=self._on_enter_pressed)
         self.btn_run.grid(row=0, column=1, sticky="e")
+        ctk.primary(self.btn_run, "terminal")
 
         # Options below input
         opts_row = ctk.CTkFrame(self.cmd_card, fg_color="transparent")
@@ -78,13 +82,17 @@ class ShellView(ctk.CTkFrame):
 
         self.txt_output = ctk.CTkTextbox(
             self.terminal_card, font=ctk.CTkFont(family="Consolas", size=12),
-            wrap="char", fg_color="#18181b"
+            wrap="char", fg_color="#0d1622", text_color="#bce8d9"
         )
         self.txt_output.grid(row=0, column=0, sticky="nsew", padx=8, pady=8)
         self.txt_output.insert("end", "$ ADB Shell Terminal Ready.\n$ Connect device and enter command above.\n\n")
 
     def update_device(self, device):
         self.device = device
+        identity = (device.serial, device.mode) if device else None
+        if identity == self._device_identity:
+            return
+        self._device_identity = identity
         if device:
             if device.mode == MODE_RECOVERY:
                 self.chk_root.select()

@@ -1,6 +1,7 @@
 import os
 import threading
-import customtkinter as ctk
+from ui.components import widgets as ctk
+from ui.components.icons import icon
 from tkinter import filedialog, messagebox
 from typing import Optional
 from core.device_manager import device_manager
@@ -13,7 +14,7 @@ from utils.constants import (
     FASTBOOT_PARTITIONS
 )
 
-class FlashingView(ctk.CTkFrame):
+class FlashingView(ctk.CTkScrollableFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, fg_color="transparent", **kwargs)
         self.device = None
@@ -25,11 +26,11 @@ class FlashingView(ctk.CTkFrame):
 
         # 1. Top Section: ADB Sideload (ROM / Kernel / Magisk ZIP)
         self.sideload_card = ctk.CTkFrame(self, corner_radius=8, fg_color=THEME_CARD_DARK)
-        self.sideload_card.grid(row=0, column=0, sticky="ew", padx=15, pady=(15, 10))
+        self.sideload_card.grid(row=0, column=0, sticky="ew", padx=(0, 4), pady=(0, 10))
         self.sideload_card.grid_columnconfigure(0, weight=1)
 
         ctk.CTkLabel(
-            self.sideload_card, text="ADB Sideload (Custom ROM / Kernel / ZIP)",
+            self.sideload_card, text="  ADB sideload", image=icon("upload", "#ff9e80"), compound="left",
             font=ctk.CTkFont(size=15, weight="bold")
         ).grid(row=0, column=0, padx=15, pady=(12, 4), sticky="w")
 
@@ -61,6 +62,7 @@ class FlashingView(ctk.CTkFrame):
             zip_action_frame, text="Start Sideload", width=140, command=self._start_sideload
         )
         self.btn_start_sideload.grid(row=0, column=0, padx=(0, 8), sticky="w")
+        ctk.primary(self.btn_start_sideload, "upload")
 
         self.btn_reboot_sideload = ctk.CTkButton(
             zip_action_frame, text="Reboot to Sideload", width=150, fg_color="#374151",
@@ -69,8 +71,8 @@ class FlashingView(ctk.CTkFrame):
         self.btn_reboot_sideload.grid(row=0, column=1, padx=(0, 8), sticky="w")
 
         self.btn_cancel_sideload = ctk.CTkButton(
-            zip_action_frame, text="Cancel", width=90, fg_color=COLOR_DANGER,
-            command=self._cancel_sideload, state="disabled"
+            zip_action_frame, text="Cancel", width=90, fg_color="#462735",
+            hover_color="#613445", text_color=COLOR_DANGER, command=self._cancel_sideload, state="disabled"
         )
         self.btn_cancel_sideload.grid(row=0, column=2, sticky="e")
 
@@ -87,11 +89,11 @@ class FlashingView(ctk.CTkFrame):
 
         # 2. Bottom Section: Fastboot Flasher (Bootloader Mode)
         self.fastboot_card = ctk.CTkFrame(self, corner_radius=8, fg_color=THEME_CARD_DARK)
-        self.fastboot_card.grid(row=1, column=0, sticky="ew", padx=15, pady=(5, 15))
+        self.fastboot_card.grid(row=1, column=0, sticky="ew", padx=(0, 4), pady=(5, 15))
         self.fastboot_card.grid_columnconfigure(0, weight=1)
 
         ctk.CTkLabel(
-            self.fastboot_card, text="Fastboot Partition Flasher",
+            self.fastboot_card, text="  Fastboot partitions", image=icon("zap", "#f6c177"), compound="left",
             font=ctk.CTkFont(size=15, weight="bold")
         ).grid(row=0, column=0, padx=15, pady=(12, 4), sticky="w")
 
@@ -128,6 +130,7 @@ class FlashingView(ctk.CTkFrame):
             fb_actions_frame, text="Flash Partition", width=140, command=self._flash_partition
         )
         self.btn_flash_partition.grid(row=0, column=0, padx=(0, 8), sticky="w")
+        ctk.primary(self.btn_flash_partition, "zap")
 
         self.btn_erase_partition = ctk.CTkButton(
             fb_actions_frame, text="Erase Partition", width=130, fg_color="#374151",
@@ -155,12 +158,13 @@ class FlashingView(ctk.CTkFrame):
 
     def update_device(self, device):
         self.device = device
+        self.lbl_sideload_status.configure(text_color=THEME_TEXT_SECONDARY_DARK)
         if not device:
             self.lbl_sideload_status.configure(text="No device connected.")
             return
 
         if device.mode == MODE_SIDELOAD:
-            self.lbl_sideload_status.configure(text="🟢 Device is ready in Sideload Mode.", text_color=COLOR_SUCCESS)
+            self.lbl_sideload_status.configure(text="Device is ready in Sideload Mode.", text_color=COLOR_SUCCESS)
         elif device.mode == MODE_RECOVERY:
             self.lbl_sideload_status.configure(text="Device in Recovery Mode. You can start sideload or use 'Reboot to Sideload'.")
         elif device.mode == MODE_FASTBOOT:

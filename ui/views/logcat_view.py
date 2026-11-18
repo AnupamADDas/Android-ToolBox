@@ -1,4 +1,4 @@
-import customtkinter as ctk
+from ui.components import widgets as ctk
 from tkinter import filedialog
 from typing import Optional
 from core.device_manager import device_manager
@@ -43,6 +43,7 @@ class LogcatView(ctk.CTkFrame):
             self.ctrl_card, text="Start", width=75, command=self._toggle_stream
         )
         self.btn_toggle_stream.grid(row=0, column=2, padx=4, pady=8)
+        ctk.primary(self.btn_toggle_stream)
 
         self.btn_pause = ctk.CTkButton(
             self.ctrl_card, text="Pause", width=65, fg_color="#374151", command=self._toggle_pause
@@ -67,7 +68,7 @@ class LogcatView(ctk.CTkFrame):
 
         self.txt_logs = ctk.CTkTextbox(
             self.display_card, font=ctk.CTkFont(family="Consolas", size=11),
-            wrap="none", fg_color="#18181b"
+            wrap="none", fg_color="#0d1622"
         )
         self.txt_logs.grid(row=0, column=0, sticky="nsew", padx=8, pady=8)
 
@@ -84,7 +85,8 @@ class LogcatView(ctk.CTkFrame):
         if not device or device.mode != MODE_DEVICE:
             if logcat_streamer.is_running:
                 logcat_streamer.stop()
-            self.btn_toggle_stream.configure(text="Start", fg_color="#2563eb")
+            self.btn_toggle_stream.configure(text="Start")
+            ctk.primary(self.btn_toggle_stream)
             return
 
     def _toggle_stream(self):
@@ -93,7 +95,8 @@ class LogcatView(ctk.CTkFrame):
 
         if logcat_streamer.is_running:
             logcat_streamer.stop()
-            self.btn_toggle_stream.configure(text="Start", fg_color="#2563eb")
+            self.btn_toggle_stream.configure(text="Start")
+            ctk.primary(self.btn_toggle_stream)
         else:
             logcat_streamer.start(self.device.serial)
             self.btn_toggle_stream.configure(text="Stop", fg_color=COLOR_DANGER)

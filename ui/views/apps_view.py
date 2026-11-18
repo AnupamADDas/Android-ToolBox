@@ -1,6 +1,7 @@
 import os
 import threading
-import customtkinter as ctk
+from ui.components import widgets as ctk
+from ui.components.icons import icon
 from tkinter import filedialog, messagebox
 from typing import Optional, List
 from core.device_manager import device_manager
@@ -30,7 +31,7 @@ class AppsView(ctk.CTkFrame):
         install_top.grid(row=0, column=0, padx=15, pady=(10, 5), sticky="ew")
         install_top.grid_columnconfigure(0, weight=1)
 
-        self.entry_apk = ctk.CTkEntry(install_top, placeholder_text="Select or drop .apk file to install...")
+        self.entry_apk = ctk.CTkEntry(install_top, placeholder_text="Select an .apk file to install…")
         self.entry_apk.grid(row=0, column=0, padx=(0, 8), sticky="ew")
 
         self.btn_browse_apk = ctk.CTkButton(
@@ -42,6 +43,7 @@ class AppsView(ctk.CTkFrame):
             install_top, text="Install APK", width=120, command=self._install_apk
         )
         self.btn_install_apk.grid(row=0, column=2, sticky="e")
+        ctk.primary(self.btn_install_apk, "download")
 
         # Options checkboxes
         opts_frame = ctk.CTkFrame(self.install_card, fg_color="transparent")
@@ -68,6 +70,7 @@ class AppsView(ctk.CTkFrame):
             values=["3rd Party", "All", "System", "Disabled"],
             command=self._on_filter_changed
         )
+        self.seg_filter.configure(height=36)
         self.seg_filter.grid(row=0, column=0, padx=15, pady=8, sticky="w")
         self.seg_filter.set("3rd Party")
 
@@ -94,7 +97,9 @@ class AppsView(ctk.CTkFrame):
     def _show_message(self, message: str):
         self._clear_list()
         lbl = ctk.CTkLabel(
-            self.scroll_frame, text=message, text_color=THEME_TEXT_SECONDARY_DARK
+            self.scroll_frame, text=message, text_color=THEME_TEXT_SECONDARY_DARK,
+            image=icon("package", "#79b8ff", 40), compound="top", pady=20,
+            wraplength=540,
         )
         lbl.grid(row=0, column=0, padx=20, pady=30)
 
@@ -153,7 +158,7 @@ class AppsView(ctk.CTkFrame):
 
         self._clear_list()
         for idx, pkg in enumerate(filtered[:150]):  # Cap rendering to 150 for high performance
-            row_frame = ctk.CTkFrame(self.scroll_frame, fg_color="transparent", height=38)
+            row_frame = ctk.CTkFrame(self.scroll_frame, fg_color="#1a283a" if idx % 2 == 0 else "transparent", height=44)
             row_frame.grid(row=idx, column=0, sticky="ew", padx=8, pady=2)
             row_frame.grid_columnconfigure(0, weight=1)
 
@@ -162,9 +167,9 @@ class AppsView(ctk.CTkFrame):
             if pkg.is_system:
                 pkg_text += " [System]"
             lbl = ctk.CTkLabel(
-                row_frame, text=pkg_text, anchor="w", font=ctk.CTkFont(size=12)
+                row_frame, text=pkg_text, anchor="w", font=ctk.CTkFont(size=12), wraplength=300,
             )
-            lbl.grid(row=0, column=0, padx=5, sticky="w")
+            lbl.grid(row=0, column=0, padx=12, pady=8, sticky="w")
 
             # Actions
             btn_actions = ctk.CTkFrame(row_frame, fg_color="transparent")
@@ -190,7 +195,7 @@ class AppsView(ctk.CTkFrame):
 
             btn_uninst = ctk.CTkButton(
                 btn_actions, text="Uninstall", width=70, height=26, font=ctk.CTkFont(size=11),
-                fg_color=COLOR_DANGER, hover_color="#dc2626",
+                fg_color="#462735", hover_color="#613445", text_color=COLOR_DANGER,
                 command=lambda p=pkg.package_id, sys=pkg.is_system: self._uninstall_app(p, sys)
             )
             btn_uninst.grid(row=0, column=3, padx=2)

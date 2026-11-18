@@ -2,23 +2,26 @@ import os
 import sys
 
 APP_NAME = "Android Toolbox"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.2.0"
 
-# Colors for modern minimalist theme (Windows 11 Fluent inspired)
-THEME_ACCENT = "#2563eb"         # Modern Indigo/Blue
-THEME_ACCENT_HOVER = "#1d4ed8"
-THEME_BG_DARK = "#18181b"        # Zinc 900
-THEME_CARD_DARK = "#27272a"      # Zinc 800
-THEME_CARD_BORDER_DARK = "#3f3f46"# Zinc 700
-THEME_INPUT_DARK = "#1f1f23"
-THEME_TEXT_PRIMARY_DARK = "#f4f4f5"
-THEME_TEXT_SECONDARY_DARK = "#a1a1aa"
+# Shared midnight palette. Colour identifies actions, tools, and device state.
+THEME_ACCENT = "#53d9cf"
+THEME_ACCENT_HOVER = "#80e8df"
+THEME_BG_DARK = "#0c121d"
+THEME_CARD_DARK = "#151f2e"
+THEME_CARD_BORDER_DARK = "#28364a"
+THEME_INPUT_DARK = "#101926"
+THEME_TEXT_PRIMARY_DARK = "#edf3fc"
+THEME_TEXT_SECONDARY_DARK = "#a2b2c9"
+THEME_SIDEBAR = "#101925"
+THEME_SURFACE = "#1e2d41"
+THEME_SURFACE_HOVER = "#2c4058"
 
-COLOR_SUCCESS = "#10b981"        # Emerald
-COLOR_WARNING = "#f59e0b"        # Amber
-COLOR_INFO = "#3b82f6"           # Blue
-COLOR_DANGER = "#ef4444"         # Rose / Red
-COLOR_MUTED = "#71717a"          # Zinc 500
+COLOR_SUCCESS = "#66dfb0"
+COLOR_WARNING = "#f6c177"
+COLOR_INFO = "#79b8ff"
+COLOR_DANGER = "#ff8196"
+COLOR_MUTED = "#8293ad"
 
 # Device Modes
 MODE_DEVICE = "device"

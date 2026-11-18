@@ -1,6 +1,7 @@
 import os
 import threading
-import customtkinter as ctk
+from ui.components import widgets as ctk
+from ui.components.icons import icon
 from tkinter import filedialog, messagebox, simpledialog
 from typing import Optional, List
 from core.device_manager import device_manager
@@ -63,6 +64,7 @@ class FilesView(ctk.CTkFrame):
 
         self.btn_push = ctk.CTkButton(self.action_card, text="Push File to Phone", width=130, command=self._push_file)
         self.btn_push.grid(row=0, column=0, padx=(15, 6), pady=8)
+        ctk.primary(self.btn_push)
 
         self.btn_pull = ctk.CTkButton(self.action_card, text="Pull Selected", width=110, fg_color="#374151", command=self._pull_file)
         self.btn_pull.grid(row=0, column=1, padx=6, pady=8)
@@ -77,7 +79,9 @@ class FilesView(ctk.CTkFrame):
         self.btn_refresh.grid(row=0, column=4, padx=6, pady=8)
 
         self.lbl_status = ctk.CTkLabel(self.action_card, text="", font=ctk.CTkFont(size=11), text_color=THEME_TEXT_SECONDARY_DARK)
-        self.lbl_status.grid(row=0, column=5, padx=15, pady=8, sticky="e")
+        self.lbl_status.grid(row=1, column=0, columnspan=6, padx=16, pady=(0, 8), sticky="w")
+        self.lbl_status.configure(wraplength=600)
+        self.btn_delete.configure(fg_color="#462735", hover_color="#613445", text_color=COLOR_DANGER)
 
         # 3. File Listing Container
         self.scroll_files = ctk.CTkScrollableFrame(self, corner_radius=8, fg_color=THEME_CARD_DARK)
@@ -92,13 +96,16 @@ class FilesView(ctk.CTkFrame):
 
     def _show_message(self, message: str):
         self._clear_list()
-        lbl = ctk.CTkLabel(self.scroll_files, text=message, text_color=THEME_TEXT_SECONDARY_DARK)
+        lbl = ctk.CTkLabel(self.scroll_files, text=message, text_color=THEME_TEXT_SECONDARY_DARK,
+                           image=icon("folder", "#f6c177", 40), compound="top", pady=20, wraplength=540)
         lbl.grid(row=0, column=0, padx=20, pady=30)
 
     def update_device(self, device):
         self.device = device
         if not device or device.mode not in [MODE_DEVICE, MODE_RECOVERY]:
             self.files.clear()
+            self.selected_file = None
+            self.lbl_status.configure(text="")
             msg = "Connect a device in Android OS or Recovery Mode to browse files."
             if device and device.mode not in [MODE_DEVICE, MODE_RECOVERY]:
                 msg = f"File Explorer is not supported in {device.mode.upper()} mode."
@@ -146,32 +153,35 @@ class FilesView(ctk.CTkFrame):
             return
 
         self._clear_list()
+        self.file_rows = {}
 
         for idx, f in enumerate(self.files):
-            row = ctk.CTkFrame(self.scroll_files, fg_color="transparent", height=32)
-            row.grid(row=idx, column=0, sticky="ew", padx=6, pady=1)
+            row = ctk.CTkFrame(self.scroll_files, fg_color="transparent", height=44)
+            row.grid(row=idx, column=0, sticky="ew", padx=6, pady=3)
             row.grid_columnconfigure(1, weight=1)
+            self.file_rows[f.path] = row
 
-            icon = "📁" if f.is_dir else "📄"
-            lbl_icon = ctk.CTkLabel(row, text=icon, width=24)
-            lbl_icon.grid(row=0, column=0, padx=(4, 2), sticky="w")
+            lbl_icon = ctk.CTkLabel(row, text="", width=24,
+                                   image=icon("folder" if f.is_dir else "file",
+                                              "#f6c177" if f.is_dir else "#79b8ff", 20))
+            lbl_icon.grid(row=0, column=0, padx=(12, 8), pady=8, sticky="w")
 
-            lbl_name = ctk.CTkLabel(row, text=f.name, anchor="w", font=ctk.CTkFont(size=12))
+            lbl_name = ctk.CTkLabel(row, text=f.name, anchor="w", font=ctk.CTkFont(size=13), wraplength=450)
             lbl_name.grid(row=0, column=1, sticky="w")
 
             lbl_size = ctk.CTkLabel(row, text=f.formatted_size, width=80, anchor="e", font=ctk.CTkFont(size=11), text_color=THEME_TEXT_SECONDARY_DARK)
             lbl_size.grid(row=0, column=2, padx=8, sticky="e")
 
             # Selection and double click navigation
-            row.bind("<Button-1>", lambda e, item=f: self._select_file(item))
-            lbl_name.bind("<Button-1>", lambda e, item=f: self._select_file(item))
-
-            if f.is_dir:
-                row.bind("<Double-Button-1>", lambda e, p=f.path: self._set_path(p))
-                lbl_name.bind("<Double-Button-1>", lambda e, p=f.path: self._set_path(p))
+            for widget in (row, lbl_icon, lbl_name, lbl_size):
+                widget.bind("<Button-1>", lambda e, item=f: self._select_file(item))
+                if f.is_dir:
+                    widget.bind("<Double-Button-1>", lambda e, p=f.path: self._set_path(p))
 
     def _select_file(self, item: RemoteFile):
         self.selected_file = item
+        for path, row in getattr(self, "file_rows", {}).items():
+            row.configure(fg_color="#203a47" if path == item.path else "transparent")
         self.lbl_status.configure(text=f"Selected: {item.name} ({item.formatted_size})")
 
     def _push_file(self):

@@ -5,6 +5,11 @@ import ctypes
 # Enable Windows High-DPI scaling awareness
 if os.name == "nt":
     try:
+        # Matches the installer shortcut so Windows groups the app correctly.
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("AndroidToolbox.Desktop")
+    except Exception:
+        pass
+    try:
         ctypes.windll.shcore.SetProcessDpiAwareness(1)
     except Exception:
         try:
